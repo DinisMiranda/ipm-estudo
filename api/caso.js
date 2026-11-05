@@ -2,7 +2,22 @@
 // A chave fica na variável de ambiente GEMINI_API_KEY (nunca no código da página).
 const { CASOS_BANK: BANK, CASOS } = require("./_casos.js");
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+// Modelo: GEMINI_MODEL se estiver definido; senão escolhe o "flash" estável mais recente que a chave tem.
+let MODEL = process.env.GEMINI_MODEL || "";
+async function resolveModel(key, force) {
+  if (MODEL && !force) return MODEL;
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key } });
+  if (!r.ok) { const e = new Error("Não foi possível obter a lista de modelos do Gemini (" + r.status + ")."); e.status = 502; e.detail = (await r.text()).slice(0, 300); throw e; }
+  const j = await r.json();
+  const ok = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+    .map(m => m.name.replace(/^models\//, ""))
+    .filter(n => /^gemini-[\d.]+-flash/.test(n) && !/(image|tts|audio|live|exp|preview|thinking|lite)/.test(n));
+  const ver = n => parseFloat((n.match(/gemini-([\d.]+)/) || [])[1] || "0");
+  ok.sort((a, b) => ver(b) - ver(a) || a.length - b.length);
+  if (!ok.length) { const e = new Error("A chave não tem nenhum modelo Gemini Flash disponível."); e.status = 502; throw e; }
+  MODEL = ok[0];
+  return MODEL;
+}
 const ITEM = {};
 [["anamnese", "a"], ["exame", "e"], ["exames", "t"]].forEach(([k, kind]) =>
   BANK[k].forEach(g => g.items.forEach(([id, label, def]) => { ITEM[id] = { id, label, def, kind, sec: g.sec }; })));
@@ -26,13 +41,19 @@ function fact(c, id) {
 async function gemini(system, prompt, maxTokens = 700) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) { const e = new Error("A IA ainda não está configurada (falta a chave do Gemini no Vercel)."); e.status = 503; throw e; }
-  const generationConfig = { responseMimeType: "application/json", temperature: 0.3, maxOutputTokens: maxTokens };
-  if (/flash/.test(MODEL) && /2\.5/.test(MODEL)) generationConfig.thinkingConfig = { thinkingBudget: 0 };
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(MODEL)}:generateContent`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig })
-  });
+  let model = await resolveModel(key);
+  const call = m => {
+    // modelos com "raciocínio" gastam tokens antes da resposta: dar folga e, no 2.5, desligá-lo
+    const generationConfig = { responseMimeType: "application/json", temperature: 0.3, maxOutputTokens: Math.max(maxTokens, 2048) };
+    if (/^gemini-2\.5-flash/.test(m)) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig })
+    });
+  };
+  let r = await call(model);
+  if (r.status === 404 && !process.env.GEMINI_MODEL) { model = await resolveModel(key, true); r = await call(model); }
   if (!r.ok) {
     const body = (await r.text()).slice(0, 400);
     const e = new Error(r.status === 429 ? "O limite gratuito do Gemini foi atingido. Tenta daqui a um minuto." : "O serviço de IA não respondeu (" + r.status + ").");
@@ -160,6 +181,7 @@ module.exports = async (req, res) => {
     if (req.method === "GET") {
       return res.status(200).json({
         ia: !!process.env.GEMINI_API_KEY,
+        modelo: MODEL || null,
         casos: CASOS.map(c => ({ id: c.id, doente: c.doente, local: c.local, queixa: c.queixa, area: c.area, tema: c.tema }))
       });
     }
