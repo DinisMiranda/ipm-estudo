@@ -38,7 +38,9 @@ function fact(c, id) {
   return (src && src[id]) || it.def;
 }
 
-async function gemini(system, prompt, maxTokens = 700) {
+const FAST = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash"];
+const CAREFUL = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+async function gemini(system, prompt, maxTokens = 700, prefer = FAST) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) { const e = new Error("A IA ainda não está configurada (falta a chave do Gemini no Vercel)."); e.status = 503; throw e; }
   const call = m => {
@@ -49,11 +51,11 @@ async function gemini(system, prompt, maxTokens = 700) {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig }),
-      signal: AbortSignal.timeout(18000)
+      signal: AbortSignal.timeout(15000)
     }).catch(err => ({ ok: false, status: err.name === "TimeoutError" ? 504 : 502, text: async () => String(err) }));
   };
   // ordem de tentativa: modelo preferido e depois alternativas (sobrecarga, retirado ou lento)
-  const order = [...new Set([process.env.GEMINI_MODEL, "gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest"].filter(Boolean))];
+  const order = [...new Set([process.env.GEMINI_MODEL, ...prefer].filter(Boolean))];
   let r, model;
   for (const m of order.slice(0, 3)) {
     model = m; r = await call(m);
@@ -159,7 +161,7 @@ async function avaliar(c, pedidos, hip, dx, plano, nPerguntas) {
     `PLANOS ERRADOS COMUNS: ${c.tx.filter(d => !d[1]).map(d => d[0] + " (" + d[2] + ")").join(" | ")}`,
     `PLANO DO ESTUDANTE: ${clip(plano, 600) || "(nenhum)"}`
   ].join("\n");
-  const j = await gemini(system, prompt, 700);
+  const j = await gemini(system, prompt, 900, CAREFUL);
   const hipSel = (j.hipoteses || []).filter(h => c.hip.some(x => x[0] === h));
   const main = c.hip.filter(h => h[1] === 2).map(h => h[0]);
   const improvaveis = hipSel.filter(h => c.hip.some(x => x[0] === h && x[1] === 0));
