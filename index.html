@@ -125,6 +125,49 @@ h3 { font: 600 13px/1.3 var(--f-body); letter-spacing: .07em; text-transform: up
 .howto { margin-top: 26px; font-size: 14px; color: var(--muted); display: grid; gap: 4px; }
 kbd { font: 500 12px/1 var(--f-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 2px 6px; background: var(--bg); color: var(--ink); }
 
+/* footer */
+.foot { border-top: 1px solid var(--line); background: var(--paper);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 22px calc(22px + env(safe-area-inset-bottom, 0px)); }
+.foot-in { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.foot-in div { display: grid; gap: 2px; min-width: 0; }
+.foot-in b { font: 600 17px/1.2 var(--f-display); }
+.foot-in span { color: var(--muted); font-size: 13px; }
+
+/* stats */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 6px 0 8px; }
+.kpi { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 4px; min-width: 0; }
+.kpi .lab { font: 600 11px/1.2 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.kpi .val { font: 600 34px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.kpi .val small { font-size: 16px; color: var(--muted); }
+.kpi .sub { font-size: 12px; color: var(--muted); }
+.kpi.hero { background: var(--accent-soft); border-color: transparent; }
+.kpi.hero .val { color: var(--accent); }
+.verdict { display: inline-block; font: 600 11px/1 var(--f-body); letter-spacing: .06em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; justify-self: start; }
+.verdict.good { background: var(--good-soft); color: var(--good); }
+.verdict.mid { background: var(--accent-soft); color: var(--accent); }
+.verdict.bad { background: var(--warn-soft); color: var(--warn); }
+.note { font-size: 13px; color: var(--muted); max-width: 80ch; margin: 10px 0 0; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 4px 0 12px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.arow { display: grid; grid-template-columns: minmax(120px, 210px) minmax(0, 1fr) 54px; gap: 12px; align-items: center; padding: 7px 0; }
+.arow .nm { font-size: 14px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.arow .pc { font: 500 12px/1 var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.arow .meter { height: 10px; }
+.meter .u { background: transparent; }
+.tblwrap { overflow-x: auto; }
+table.tt { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 520px; }
+table.tt th { text-align: left; font: 600 11px/1.2 var(--f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding: 8px 8px; border-bottom: 1px solid var(--line); }
+table.tt td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.tt td.n { font: 500 12px/1 var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.tt .meter { width: 120px; }
+table.tt button { padding: 5px 10px; font-size: 13px; }
+.days { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding-top: 8px; }
+.day { flex: 1 1 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; }
+.day .bar { display: flex; flex-direction: column-reverse; border-radius: 4px 4px 0 0; overflow: hidden; background: var(--line); min-height: 2px; }
+.day .bar i { display: block; }
+.day span { font: 500 10px/1 var(--f-mono); color: var(--muted); text-align: center; }
+.danger { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+
 /* links */
 .links { margin-top: 20px; }
 .linkgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
@@ -189,6 +232,7 @@ kbd { font: 500 12px/1 var(--f-mono); border: 1px solid var(--line); border-bott
     <div class="modes" role="group" aria-label="Modo">
       <button id="m-resumo" aria-pressed="true">Resumo</button>
       <button id="m-cards" aria-pressed="false">Flashcards</button>
+      <button id="m-stats" aria-pressed="false">Estatísticas</button>
     </div>
   </div>
 </header>
@@ -200,6 +244,12 @@ kbd { font: 500 12px/1 var(--f-mono); border: 1px solid var(--line); border-bott
   </nav>
   <main id="main"></main>
 </div>
+<footer class="foot">
+  <div class="foot-in">
+    <div><b>Sebenta Chefe 1 — IPM</b><span>O PDF original completo, com todas as imagens e esquemas (431 páginas, 28 MB).</span></div>
+    <a class="btn primary" href="Sebenta_Chefe_IPM.pdf" target="_blank" rel="noopener">Abrir a sebenta ↗</a>
+  </div>
+</footer>
 
 <script>
 window.TOPICS = window.TOPICS || [];
@@ -2451,6 +2501,35 @@ window.TOPICS.push(
   try { prog = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { prog = {}; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} }
   function ck(tid, i) { return tid + ":" + i; }
+  var HKEY = "ipm-hist-v1";
+  var hist = {};
+  try { hist = JSON.parse(localStorage.getItem(HKEY) || "{}") || {}; } catch (e) { hist = {}; }
+  function dayKey(dt) { var d = dt || new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function logAnswer(v) {
+    var k = dayKey(); var h = hist[k] || { k: 0, r: 0 };
+    if (v === 1) h.k++; else h.r++;
+    hist[k] = h;
+    try { localStorage.setItem(HKEY, JSON.stringify(hist)); } catch (e) {}
+  }
+
+  // Estimativa: probabilidade de acertar uma pergunta conforme o estado do cartão.
+  var P = { k: 0.9, r: 0.35, u: 0.25 };
+  var EXAM_N = 50, PASS = 9.5 / 20;
+  function expected(c) { return c.n ? (c.k * P.k + c.r * P.r + (c.n - c.k - c.r) * P.u) / c.n : 0; }
+  function passProb(p) {
+    var need = Math.ceil(PASS * EXAM_N - 1e-9), sum = 0;
+    for (var x = need; x <= EXAM_N; x++) sum += binom(EXAM_N, x) * Math.pow(p, x) * Math.pow(1 - p, EXAM_N - x);
+    return Math.min(1, Math.max(0, sum));
+  }
+  function binom(n, k) { var r = 1; for (var i = 1; i <= k; i++) r = r * (n - k + i) / i; return r; }
+  function cardsToTarget(c, target) {
+    var k = c.k, r = c.r, u = c.n - c.k - c.r, moved = 0;
+    while (passProb((k * P.k + r * P.r + u * P.u) / c.n) < target && (u > 0 || r > 0)) {
+      if (u > 0) u--; else r--;
+      k++; moved++;
+    }
+    return moved;
+  }
 
   var allCards = [];
   ordered.forEach(function (t) { t.cards.forEach(function (c, i) { allCards.push({ tid: t.id, i: i, q: c[0], a: c[1] }); }); });
@@ -2646,19 +2725,77 @@ window.TOPICS.push(
   }
   function mark(v) {
     var cur = deck.order[deck.idx]; if (!cur) return;
-    prog[ck(cur.tid, cur.i)] = v; save();
+    prog[ck(cur.tid, cur.i)] = v; save(); logAnswer(v);
     deck.idx++; deck.flipped = false; renderCards();
+  }
+
+  function pct(x) { return Math.round(x * 100); }
+  function renderStats() {
+    var c = counts(allCards);
+    var e = expected(c), pp = passProb(e), nota = e * 20;
+    var verdict = pp >= 0.8 ? ['good', 'Bem encaminhado'] : pp >= 0.5 ? ['mid', 'No limite'] : ['bad', 'Ainda em risco'];
+    var need80 = cardsToTarget(c, 0.8);
+    var answered = 0, days = 0;
+    Object.keys(hist).forEach(function (d) { answered += hist[d].k + hist[d].r; days++; });
+
+    var html = '<section class="sheet"><span class="eyebrow">O teu progresso</span><h1>Estatísticas</h1>' +
+      '<div class="kpis">' +
+      '<div class="kpi hero"><span class="lab">Probabilidade de passar</span><span class="val">' + pct(pp) + '<small>%</small></span><span class="verdict ' + verdict[0] + '">' + verdict[1] + '</span></div>' +
+      '<div class="kpi"><span class="lab">Nota estimada</span><span class="val">' + nota.toFixed(1).replace(".", ",") + '<small> / 20</small></span><span class="sub">Para passar: 9,5</span></div>' +
+      '<div class="kpi"><span class="lab">Cartões sabidos</span><span class="val">' + pct(c.k / c.n) + '<small>%</small></span><span class="sub">' + c.k + ' de ' + c.n + '</span></div>' +
+      '<div class="kpi"><span class="lab">Respostas dadas</span><span class="val">' + answered + '</span><span class="sub">' + days + (days === 1 ? ' dia' : ' dias') + ' de estudo</span></div>' +
+      '</div>' +
+      '<p class="note">' + (need80 > 0 ? 'Para chegares a <b>80% de probabilidade</b> de passar, marca mais <b>' + need80 + ' cartões</b> como sabidos. ' : 'Já estás acima dos 80% de probabilidade. Continua a rever os que falhaste. ') +
+      'A estimativa assume um exame de ' + EXAM_N + ' perguntas sobre esta matéria, com nota mínima de 9,5, e conta ' + pct(P.k) + '% de acerto nos cartões que sabes, ' + pct(P.r) + '% nos que tens a rever e ' + pct(P.u) + '% nos que nunca viste. É uma orientação, não uma previsão do exame real.</p>';
+
+    // por área
+    html += '<h3>Por área</h3><div class="legend"><span><i style="background:var(--good)"></i>Sabidos</span><span><i style="background:var(--warn)"></i>A rever</span><span><i style="background:var(--line)"></i>Por ver</span></div>';
+    AREAS.forEach(function (a) {
+      var ac = counts(cardsOf("area-" + slug(a.name)));
+      html += '<div class="arow"><span class="nm"><span class="dot" style="background:' + a.color + '"></span>' + esc(a.name) + '</span>' + meter(ac) + '<span class="pc">' + pct(ac.k / ac.n) + '%</span></div>';
+    });
+
+    // atividade 14 dias
+    html += '<h3>Últimos 14 dias</h3><div class="days" aria-label="Respostas por dia">';
+    var max = 1, list = [];
+    for (var i = 13; i >= 0; i--) { var dt = new Date(); dt.setDate(dt.getDate() - i); var h = hist[dayKey(dt)] || { k: 0, r: 0 }; list.push({ d: dt, h: h }); max = Math.max(max, h.k + h.r); }
+    list.forEach(function (x) {
+      var tot = x.h.k + x.h.r;
+      html += '<div class="day" title="' + x.d.toLocaleDateString("pt-PT") + ': ' + x.h.k + ' sabidos, ' + x.h.r + ' a rever"><div class="bar" style="height:' + (tot / max * 100) + '%"><i style="height:' + (tot ? x.h.k / tot * 100 : 0) + '%;background:var(--good)"></i><i style="height:' + (tot ? x.h.r / tot * 100 : 0) + '%;background:var(--warn)"></i></div><span>' + x.d.getDate() + '</span></div>';
+    });
+    html += '</div>';
+
+    // temas por prioridade
+    var rows = ordered.map(function (t) { var tc = counts(cardsOf(t.id)); return { t: t, c: tc, e: expected(tc) }; });
+    rows.sort(function (a, b) { return a.e - b.e || b.c.r - a.c.r; });
+    html += '<h3>Temas por prioridade</h3><p class="note" style="margin-top:0">Ordenados do mais fraco para o mais forte. Começa pelos de cima.</p><div class="tblwrap"><table class="tt"><thead><tr><th>Tema</th><th>Progresso</th><th>Sabidos</th><th>A rever</th><th></th></tr></thead><tbody>';
+    rows.forEach(function (r) {
+      html += '<tr><td><a href="#' + r.t.id + '" style="color:var(--ink)">' + esc(r.t.title) + '</a></td><td>' + meter(r.c) + '</td><td class="n">' + r.c.k + ' / ' + r.c.n + '</td><td class="n">' + r.c.r + '</td><td><button class="btn" data-study="' + r.t.id + '"' + (r.c.r ? ' data-filter="naosabidos"' : '') + '>Treinar</button></td></tr>';
+    });
+    html += '</tbody></table></div>';
+
+    html += '<div class="danger"><span>Os dados ficam só neste browser.</span><button class="btn" id="reset">Apagar o meu progresso</button><span id="resetconfirm" hidden><button class="btn r" id="reset-yes">Sim, apagar tudo</button> <button class="btn" id="reset-no">Cancelar</button></span></div></section>';
+    main.innerHTML = html;
+    bind("reset", function () { document.getElementById("resetconfirm").hidden = false; this.hidden = true; });
+    bind("reset-no", function () { renderStats(); });
+    bind("reset-yes", function () {
+      prog = {}; hist = {};
+      try { localStorage.removeItem(KEY); localStorage.removeItem(HKEY); } catch (e) {}
+      buildDeck(); renderStats();
+    });
   }
 
   function setMode(m) {
     mode = m;
     document.getElementById("m-resumo").setAttribute("aria-pressed", m === "resumo");
     document.getElementById("m-cards").setAttribute("aria-pressed", m === "cards");
+    document.getElementById("m-stats").setAttribute("aria-pressed", m === "stats");
     render();
   }
   function render() {
     renderNav();
-    if (mode === "cards") renderCards();
+    if (mode === "stats") renderStats();
+    else if (mode === "cards") renderCards();
     else if (current && byId[current]) renderTopic(byId[current]);
     else renderHome();
     window.scrollTo(0, 0);
@@ -2672,6 +2809,7 @@ window.TOPICS.push(
   function fromHash() {
     var h = (location.hash || "").slice(1);
     if (h === "treino") { if (!deck.order.length) buildDeck(); setMode("cards"); return; }
+    if (h === "estatisticas") { setMode("stats"); return; }
     current = byId[h] ? h : null;
     if (mode === "cards" && current) { mode = "resumo"; }
     setMode(mode === "cards" ? "cards" : "resumo");
@@ -2683,6 +2821,7 @@ window.TOPICS.push(
     if (!deck.order.length) buildDeck();
     setMode("cards");
   });
+  document.getElementById("m-stats").addEventListener("click", function () { setMode("stats"); });
   main.addEventListener("click", function (e) {
     var b = e.target.closest("[data-study]");
     if (b) { study(b.getAttribute("data-study"), b.getAttribute("data-filter")); }
