@@ -6,7 +6,7 @@ const { CASOS_BANK: BANK, CASOS } = require("./_casos.js");
 let MODEL = process.env.GEMINI_MODEL || "";
 async function resolveModel(key, force) {
   if (MODEL && !force) return MODEL;
-  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key } });
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key }, signal: AbortSignal.timeout(15000) });
   if (!r.ok) { const e = new Error("Não foi possível obter a lista de modelos do Gemini (" + r.status + ")."); e.status = 502; e.detail = (await r.text()).slice(0, 300); throw e; }
   const j = await r.json();
   const ok = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
@@ -49,8 +49,9 @@ async function gemini(system, prompt, maxTokens = 700) {
     return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig })
-    });
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig }),
+      signal: AbortSignal.timeout(25000)
+    }).catch(err => { const e = new Error(err.name === "TimeoutError" ? "O Gemini demorou demasiado a responder. Tenta outra vez." : "Não foi possível contactar o Gemini."); e.status = 504; e.detail = String(err); throw e; });
   };
   let r = await call(model);
   if (r.status === 404 && !process.env.GEMINI_MODEL) { model = await resolveModel(key, true); r = await call(model); }
@@ -178,6 +179,25 @@ async function avaliar(c, pedidos, hip, dx, plano, nPerguntas) {
 module.exports = async (req, res) => {
   res.setHeader("cache-control", "no-store");
   try {
+    if (req.method === "GET" && req.query && req.query.diag === "1") {
+      // diagnóstico: que modelos a chave vê e se um pedido mínimo funciona (nunca devolve a chave)
+      const key = process.env.GEMINI_API_KEY, out = { temChave: !!key, formatoChave: key ? (key.startsWith("AIza") ? "AIza…" : key.slice(0, 3) + "…") : null };
+      if (!key) return res.status(200).json(out);
+      const t0 = Date.now();
+      try {
+        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key }, signal: AbortSignal.timeout(15000) });
+        out.lista = { status: r.status, ms: Date.now() - t0 };
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) out.lista.erro = JSON.stringify(j).slice(0, 300);
+        out.flash = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent") && /flash/.test(m.name)).map(m => m.name.replace("models/", ""));
+      } catch (e) { out.lista = { erro: String(e), ms: Date.now() - t0 }; }
+      try {
+        const t1 = Date.now(); const m = await resolveModel(key, true); out.escolhido = m;
+        const r2 = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key }, body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Responde só: ok" }] }] }), signal: AbortSignal.timeout(20000) });
+        out.teste = { status: r2.status, ms: Date.now() - t1, resposta: (await r2.text()).slice(0, 200) };
+      } catch (e) { out.teste = { erro: String(e.message || e) }; }
+      return res.status(200).json(out);
+    }
     if (req.method === "GET") {
       return res.status(200).json({
         ia: !!process.env.GEMINI_API_KEY,
