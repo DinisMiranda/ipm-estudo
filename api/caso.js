@@ -41,7 +41,6 @@ function fact(c, id) {
 async function gemini(system, prompt, maxTokens = 700) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) { const e = new Error("A IA ainda não está configurada (falta a chave do Gemini no Vercel)."); e.status = 503; throw e; }
-  let model = await resolveModel(key);
   const call = m => {
     // modelos com "raciocínio" gastam tokens antes da resposta: dar folga e, no 2.5, desligá-lo
     const generationConfig = { responseMimeType: "application/json", temperature: 0.3, maxOutputTokens: Math.max(maxTokens, 2048) };
@@ -50,18 +49,23 @@ async function gemini(system, prompt, maxTokens = 700) {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig }),
-      signal: AbortSignal.timeout(25000)
-    }).catch(err => { const e = new Error(err.name === "TimeoutError" ? "O Gemini demorou demasiado a responder. Tenta outra vez." : "Não foi possível contactar o Gemini."); e.status = 504; e.detail = String(err); throw e; });
+      signal: AbortSignal.timeout(18000)
+    }).catch(err => ({ ok: false, status: err.name === "TimeoutError" ? 504 : 502, text: async () => String(err) }));
   };
-  let r = await call(model);
-  if (r.status === 404 && !process.env.GEMINI_MODEL) { model = await resolveModel(key, true); r = await call(model); }
+  // ordem de tentativa: modelo preferido e depois alternativas (sobrecarga, retirado ou lento)
+  const order = [...new Set([process.env.GEMINI_MODEL, "gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest"].filter(Boolean))];
+  let r, model;
+  for (const m of order.slice(0, 3)) {
+    model = m; r = await call(m);
+    if (r.ok || r.status === 429 || r.status === 400 || r.status === 403) break;
+  }
   if (!r.ok) {
     const body = (await r.text()).slice(0, 400);
     const e = new Error(r.status === 429 ? "O limite gratuito do Gemini foi atingido. Tenta daqui a um minuto." : "O serviço de IA não respondeu (" + r.status + ").");
     e.status = r.status === 429 ? 429 : 502; e.detail = body; throw e;
   }
   const j = await r.json();
-  const txt = ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || "").join("").trim();
+  const txt = ((j.candidates || [])[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || "").join("").trim();
   try { return JSON.parse(txt.replace(/^```(?:json)?\s*|\s*```$/g, "")); }
   catch { const e = new Error("A IA devolveu uma resposta inválida. Tenta outra vez."); e.status = 502; e.detail = txt.slice(0, 300); throw e; }
 }
