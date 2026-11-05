@@ -192,7 +192,7 @@ module.exports = async (req, res) => {
         out.flash = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent") && /flash/.test(m.name)).map(m => m.name.replace("models/", ""));
       } catch (e) { out.lista = { erro: String(e), ms: Date.now() - t0 }; }
       try {
-        const t1 = Date.now(); const m = await resolveModel(key, true); out.escolhido = m;
+        const t1 = Date.now(); const m = /^[\w.-]+$/.test(req.query.m || "") ? req.query.m : await resolveModel(key, true); out.escolhido = m;
         const r2 = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key }, body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Responde só: ok" }] }] }), signal: AbortSignal.timeout(20000) });
         out.teste = { status: r2.status, ms: Date.now() - t1, resposta: (await r2.text()).slice(0, 200) };
       } catch (e) { out.teste = { erro: String(e.message || e) }; }
