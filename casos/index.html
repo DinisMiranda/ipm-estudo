@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Casos Clínicos · IPM Estudo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: consultório — ficha do doente à esquerda, conversa ao centro, raciocínio clínico à direita. */
+:root {
+  --bg: #eef2f0; --paper: #ffffff; --ink: #16201d; --muted: #5b6a65; --line: #dde3e0;
+  --accent: #0e6a63; --accent-ink: #ffffff; --accent-soft: #e2f0ee;
+  --good: #2f7d3a; --good-soft: #e5f2e6; --warn: #b0561c; --warn-soft: #f8e9df;
+  --chat: #f7f9f8; --shadow: 0 1px 2px rgba(20,32,29,.06), 0 8px 24px rgba(20,32,29,.07);
+  --f-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1312; --paper: #162020; --ink: #e6ecea; --muted: #9aaaa5; --line: #2a3634;
+    --accent: #5cc1b6; --accent-ink: #0d1312; --accent-soft: #1d3331;
+    --good: #7ccc86; --good-soft: #1d3322; --warn: #f0a070; --warn-soft: #3a261a;
+    --chat: #111a19; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1312; --paper: #162020; --ink: #e6ecea; --muted: #9aaaa5; --line: #2a3634;
+  --accent: #5cc1b6; --accent-ink: #0d1312; --accent-soft: #1d3331;
+  --good: #7ccc86; --good-soft: #1d3322; --warn: #f0a070; --warn-soft: #3a261a;
+  --chat: #111a19; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--f-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+[hidden] { display: none !important; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+a { color: var(--accent); }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); border-bottom: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top-in { max-width: 1400px; margin: 0 auto; min-height: 58px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-block: 8px; }
+.back { text-decoration: none; font-weight: 600; font-size: 14px; color: var(--muted); }
+.back:hover { color: var(--accent); }
+.brand { font: 600 21px/1 var(--f-display); margin-right: auto; }
+.acct { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.acct img { width: 26px; height: 26px; border-radius: 50%; }
+.btn { border: 1px solid var(--line); background: var(--paper); border-radius: 10px; padding: 9px 15px; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--ink); }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.07); }
+.btn:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+.eyebrow { font: 600 11px/1.2 var(--f-body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: inline-flex; gap: 8px; align-items: center; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--accent); }
+
+/* lista */
+.wrap { max-width: 1400px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 48px; }
+.hero { max-width: 760px; margin-bottom: 26px; }
+.hero h1 { font: 600 clamp(32px, 5vw, 48px)/1.05 var(--f-display); letter-spacing: -.015em; margin: 10px 0 14px; text-wrap: balance; }
+.hero p { color: var(--muted); font-size: 16px; margin: 0 0 10px; max-width: 66ch; }
+.steps-how { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding: 0; list-style: none; counter-reset: s; }
+.steps-how li { counter-increment: s; background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px 6px 8px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.steps-how li::before { content: counter(s); width: 20px; height: 20px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 600 11px/20px var(--f-mono); text-align: center; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+.case { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; box-shadow: var(--shadow); }
+.case .who { font: 600 20px/1.2 var(--f-display); }
+.case blockquote { margin: 0; color: var(--muted); font-size: 15px; border-left: 2px solid var(--line); padding-left: 10px; }
+.case .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 6px; }
+.pill { font: 600 12px/1 var(--f-mono); padding: 5px 9px; border-radius: 999px; background: var(--bg); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pill.ok { background: var(--good-soft); color: var(--good); }
+.pill.no { background: var(--warn-soft); color: var(--warn); }
+.notice { background: var(--warn-soft); color: var(--warn); border-radius: 12px; padding: 12px 14px; margin-bottom: 18px; font-size: 14px; }
+
+/* consulta */
+.room { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 270px minmax(0, 1fr) 330px; gap: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px;
+  height: calc(100dvh - 59px - env(safe-area-inset-top, 0px)); }
+.rail { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: auto; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.patient .avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font: 600 20px/1 var(--f-display); margin-bottom: 10px; }
+.patient .who { font: 600 20px/1.2 var(--f-display); }
+.patient .meta { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.patient blockquote { margin: 0; font-size: 15px; border-left: 3px solid var(--accent); padding-left: 10px; }
+.phases { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.phases li { display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 6px 8px; border-radius: 8px; color: var(--muted); }
+.phases li i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
+.phases li.done { color: var(--ink); }
+.phases li.done i { background: var(--good); border-color: var(--good); }
+.phases li.now { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.phases li.now i { border-color: var(--accent); background: var(--paper); }
+.phases li small { margin-left: auto; font: 500 11px/1 var(--f-mono); color: var(--muted); }
+.card h3 { margin: 0 0 10px; font: 600 11px/1.2 var(--f-body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+.chat { display: flex; flex-direction: column; min-height: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.thread { flex: 1; overflow: auto; padding: 18px; background: var(--chat); display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 80%; display: grid; gap: 3px; }
+.msg .lab { font: 600 10px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.msg .b { padding: 10px 13px; border-radius: 14px; font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.me { align-self: flex-end; text-align: left; }
+.msg.me .lab { text-align: right; }
+.msg.me .b { background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; }
+.msg.pt .b { background: var(--paper); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.msg.sys { align-self: center; max-width: 92%; }
+.msg.sys .b { background: var(--warn-soft); color: var(--warn); font-size: 13px; text-align: center; }
+.finding { align-self: stretch; max-width: 100%; background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; padding: 10px 13px; font-size: 14px; }
+.finding .lab { font: 600 10px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; display: block; }
+.finding .req { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+.finding dl { margin: 0; display: grid; gap: 6px; }
+.finding dt { font-weight: 600; }
+.finding dd { margin: 0; color: var(--ink); }
+.typing { align-self: flex-start; color: var(--muted); font-size: 13px; font-style: italic; }
+.start { margin: auto; text-align: center; color: var(--muted); max-width: 46ch; font-size: 14px; }
+.start b { display: block; color: var(--ink); font: 600 19px/1.3 var(--f-display); margin-bottom: 6px; }
+.composer { border-top: 1px solid var(--line); padding: 12px; display: grid; gap: 8px; background: var(--paper); }
+.modes { display: flex; gap: 6px; flex-wrap: wrap; }
+.modes button { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.modes button[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.modes button:disabled { opacity: .45; cursor: not-allowed; }
+.inrow { display: flex; gap: 8px; align-items: flex-end; }
+.inrow textarea { flex: 1; min-width: 0; resize: none; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 10px 12px; min-height: 44px; max-height: 140px; line-height: 1.4; }
+.inrow .btn { height: 44px; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+
+.reason label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 6px; }
+.reason label:first-of-type { margin-top: 0; }
+.reason textarea, .reason input { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 11px; resize: vertical; }
+.reason .locked { background: var(--accent-soft); border-radius: 10px; padding: 9px 11px; font-size: 14px; white-space: pre-wrap; }
+.reason .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.reason .msgline { font-size: 13px; color: var(--warn); margin: 8px 0 0; min-height: 1em; }
+
+/* relatório */
+.report { max-width: 1100px; }
+.report-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+.score { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 6px 0 16px; }
+.score b { font: 600 64px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.score span { color: var(--muted); font-size: 16px; }
+.dims { display: grid; gap: 8px; }
+.dim { display: grid; grid-template-columns: 140px minmax(0, 1fr) 46px; gap: 12px; align-items: center; font-size: 14px; }
+.dim .bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.dim .bar i { display: block; height: 100%; background: var(--accent); }
+.dim .pc { font: 500 12px/1 var(--f-mono); text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.report h2 { font: 600 22px/1.2 var(--f-display); margin: 26px 0 10px; }
+.fb { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fb li { border: 1px solid var(--line); background: var(--paper); border-radius: 12px; padding: 11px 13px; font-size: 14px; }
+.fb li b { display: block; margin-bottom: 2px; }
+.fb li span { color: var(--muted); }
+.fb li .tag { display: inline-block; font: 600 10px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-right: 6px; }
+.fb li.bad { background: var(--warn-soft); border-color: transparent; }
+.fb li.good { background: var(--good-soft); border-color: transparent; }
+.hc { font-size: 14px; }
+.hc h4 { margin: 14px 0 6px; font: 600 11px/1.2 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.hc h4:first-child { margin-top: 0; }
+.hc p { margin: 0 0 6px; }
+.hc .q { color: var(--muted); }
+
+@media (max-width: 1100px) {
+  .room { grid-template-columns: minmax(0, 1fr) 320px; }
+  .room .rail.left { grid-column: 1 / -1; flex-direction: row; overflow: visible; }
+  .room .rail.left .card { flex: 1; }
+  .room .rail.left .phasescard { display: none; }
+  .room .rail.left > .btn { align-self: flex-start; }
+  .room { height: auto; }
+  .chat { height: calc(100dvh - 200px); min-height: 460px; }
+}
+@media (max-width: 760px) {
+  .room { grid-template-columns: minmax(0, 1fr); padding-block: 10px; }
+  .room .rail.left { flex-direction: column; }
+  .chat { height: 72dvh; }
+  .msg { max-width: 92%; }
+  .report-grid { grid-template-columns: minmax(0, 1fr); }
+  .dim { grid-template-columns: 110px minmax(0, 1fr) 42px; }
+  .patient { display: grid; grid-template-columns: auto 1fr; gap: 0 12px; align-items: center; }
+  .patient .avatar { margin: 0; grid-row: span 2; }
+  .patient blockquote { grid-column: 1 / -1; margin-top: 8px; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="back" href="/">← Voltar ao estudo</a>
+    <span class="brand">Casos clínicos</span>
+    <div class="acct" id="acct"></div>
+  </div>
+</header>
+<main id="app"></main>
+
+<script src="/firebase-config.js"></script>
+<script>
+(function () {
+  var API = "/api/caso";
+  var app = document.getElementById("app");
+  var LIST = [], IA = true;
+  var CKEY = "ipm-casos-v1", RKEY = "ipm-caso-run";
+  var casosRes = {}; try { casosRes = JSON.parse(localStorage.getItem(CKEY) || "{}") || {}; } catch (e) {}
+  var run = null; try { run = JSON.parse(sessionStorage.getItem(RKEY) || "null"); } catch (e) { run = null; }
+  var busy = false;
+  var AREA = { "Infecciologia": "#b23a48", "Pneumologia": "#2a64a8", "Saúde Pública": "#7a5a12", "Cardiovascular": "#8a3d8f", "Sintomas e Semiologia": "#0e6a63" };
+  var MODES = { a: { nome: "Conversar com o doente", lab: "Tu", ph: "Escreve a tua pergunta ao doente…", ex: "Ex.: \"Quando começou?\", \"Toma alguma medicação?\", \"Já viajou recentemente?\"" },
+                e: { nome: "Examinar", lab: "Exame", ph: "O que queres examinar?", ex: "Ex.: \"sinais vitais\", \"auscultação pulmonar\", \"palpar o abdómen\"" },
+                t: { nome: "Pedir exames", lab: "Pedido", ph: "Que exame queres pedir?", ex: "Ex.: \"hemograma\", \"radiografia do tórax\", \"ECG\"" } };
+
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function saveRun() { try { if (run) sessionStorage.setItem(RKEY, JSON.stringify(run)); else sessionStorage.removeItem(RKEY); } catch (e) {} }
+  function today() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function initials(s) { var m = String(s).match(/^(Homem|Mulher)/); return m ? (m[1] === "Homem" ? "H" : "M") : "?"; }
+  async function api(body) {
+    var r = await fetch(API, { method: body ? "POST" : "GET", headers: body ? { "content-type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
+    var j = {}; try { j = await r.json(); } catch (e) {}
+    if (!r.ok) throw new Error(j.erro || ("Erro " + r.status));
+    return j;
+  }
+
+  // ---------- lista ----------
+  function renderList() {
+    document.title = "Casos Clínicos · IPM Estudo";
+    var html = '<div class="wrap"><section class="hero"><span class="eyebrow">Consultório de treino</span><h1>Entrevista um doente e mostra como pensas</h1>' +
+      '<p>Cada caso começa só com a queixa. Escreves as perguntas como numa consulta real, examinas, registas hipóteses antes de pedir exames e terminas com o diagnóstico e o plano. No fim vês o que te escapou e porquê.</p>' +
+      '<ol class="steps-how"><li>Anamnese</li><li>Exame físico</li><li>Hipóteses</li><li>Exames</li><li>Diagnóstico e plano</li></ol></section>';
+    if (!IA) html += '<div class="notice">O doente virtual ainda não está ligado (falta configurar a IA). Podes ver os casos, mas a conversa só funciona depois disso.</div>';
+    html += '<div class="grid">' + LIST.map(function (c) {
+      var r = casosRes[c.id];
+      var pill = r ? '<span class="pill ' + (r.best >= 9.5 ? "ok" : "no") + '">Melhor ' + String(r.best.toFixed(1)).replace(".", ",") + '/20</span>' : '<span class="pill">Por fazer</span>';
+      return '<article class="case"><span class="eyebrow"><span class="dot" style="background:' + (AREA[c.area] || "var(--accent)") + '"></span>' + esc(c.local) + '</span>' +
+        '<span class="who">' + esc(c.doente) + '</span><blockquote>“' + esc(c.queixa) + '”</blockquote>' +
+        '<div class="row">' + pill + '<button class="btn primary" data-start="' + c.id + '">' + (r ? "Repetir consulta" : "Entrar na consulta") + '</button></div></article>';
+    }).join("") + '</div></div>';
+    app.innerHTML = html;
+  }
+
+  // ---------- consulta ----------
+  function caseInfo(id) { return LIST.filter(function (c) { return c.id === id; })[0]; }
+  function start(id) {
+    run = { caso: id, mode: "a", log: [], pedidos: [], nPerguntas: 0, hip: "", hipLocked: false, dx: "", plano: "" };
+    saveRun(); renderRoom();
+  }
+  function phaseState() {
+    var a = run.log.some(function (m) { return m.t === "q"; }), e = run.log.some(function (m) { return m.t === "e"; }), t = run.log.some(function (m) { return m.t === "x"; });
+    var now = run.hipLocked ? (t ? "d" : "t") : (run.mode === "e" ? "e" : (e && run.mode !== "a" ? "h" : "a"));
+    return { a: a, e: e, h: run.hipLocked, t: t, now: now };
+  }
+  function renderRoom() {
+    var c = caseInfo(run.caso); if (!c) { run = null; saveRun(); return renderList(); }
+    document.title = c.doente + " · Casos Clínicos";
+    var ps = phaseState();
+    var ph = [["a", "Anamnese", run.nPerguntas + " perg."], ["e", "Exame físico", ""], ["h", "Hipóteses", ""], ["t", "Exames", ""], ["d", "Diagnóstico e plano", ""]];
+    var html = '<div class="room"><aside class="rail left">' +
+      '<section class="card patient"><div class="avatar">' + initials(c.doente) + '</div><div><div class="who">' + esc(c.doente) + '</div><div class="meta">' + esc(c.local) + '</div></div><blockquote>“' + esc(c.queixa) + '”</blockquote></section>' +
+      '<section class="card phasescard"><h3>Fases da consulta</h3><ol class="phases">' + ph.map(function (p) {
+        var done = ps[p[0]], now = ps.now === p[0];
+        return '<li class="' + (now ? "now" : done ? "done" : "") + '"><i></i>' + p[1] + (p[2] ? '<small>' + p[2] + '</small>' : '') + '</li>';
+      }).join("") + '</ol></section>' +
+      '<button class="btn" id="leave">Sair da consulta</button></aside>';
+    html += '<section class="chat" aria-label="Consulta"><div class="thread" id="thread" aria-live="polite"></div><div class="composer">' +
+      '<div class="modes" role="group" aria-label="O que queres fazer">' + ["a", "e", "t"].map(function (k) {
+        var dis = k === "t" && !run.hipLocked;
+        return '<button data-mode="' + k + '" aria-pressed="' + (run.mode === k) + '"' + (dis ? ' disabled title="Regista as hipóteses primeiro"' : '') + '>' + MODES[k].nome + '</button>';
+      }).join("") + '</div>' +
+      '<div class="inrow"><textarea id="inp" rows="1" maxlength="400" placeholder="' + esc(MODES[run.mode].ph) + '" aria-label="' + esc(MODES[run.mode].ph) + '"></textarea><button class="btn primary" id="send">Enviar</button></div>' +
+      '<p class="hint" id="hint">' + esc(MODES[run.mode].ex) + (run.hipLocked ? "" : " · Os exames ficam disponíveis depois de registares as hipóteses.") + '</p></div></section>';
+    html += '<aside class="rail right"><section class="card reason"><h3>Raciocínio clínico</h3>';
+    if (!run.hipLocked) {
+      html += '<label for="hip">Hipóteses de diagnóstico</label><textarea id="hip" rows="4" placeholder="Uma a três hipóteses, uma por linha">' + esc(run.hip) + '</textarea>' +
+        '<div class="actions"><button class="btn primary" id="lockhip">Registar hipóteses</button></div><p class="msgline" id="hipmsg"></p>' +
+        '<p class="hint">Registar as hipóteses antes de pedir exames faz parte da avaliação.</p>';
+    } else {
+      html += '<label>Hipóteses registadas</label><div class="locked">' + esc(run.hip) + '</div>' +
+        '<label for="dx">Diagnóstico mais provável</label><input id="dx" maxlength="300" value="' + esc(run.dx) + '" placeholder="Ex.: …">' +
+        '<label for="plano">Plano</label><textarea id="plano" rows="5" maxlength="600" placeholder="Internar ou não, tratamento, medidas…">' + esc(run.plano) + '</textarea>' +
+        '<div class="actions"><button class="btn primary" id="finish">Terminar e avaliar</button></div><p class="msgline" id="finmsg"></p>';
+    }
+    html += '</section></aside></div>';
+    app.innerHTML = html;
+    renderThread();
+    var inp = document.getElementById("inp");
+    inp.addEventListener("input", function () { inp.style.height = "auto"; inp.style.height = Math.min(140, inp.scrollHeight) + "px"; });
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+    if (window.matchMedia("(min-width: 761px)").matches) inp.focus();
+    var hip = document.getElementById("hip"); if (hip) hip.addEventListener("input", function () { run.hip = hip.value; saveRun(); });
+    var dx = document.getElementById("dx"); if (dx) dx.addEventListener("input", function () { run.dx = dx.value; saveRun(); });
+    var pl = document.getElementById("plano"); if (pl) pl.addEventListener("input", function () { run.plano = pl.value; saveRun(); });
+  }
+  function renderThread(typing) {
+    var th = document.getElementById("thread"); if (!th) return;
+    var c = caseInfo(run.caso);
+    if (!run.log.length && !typing) {
+      th.innerHTML = '<div class="start"><b>O doente está à tua frente.</b>Começa por perguntar o que o traz cá, ou vai direto às perguntas que achas importantes. Tudo o que escreves conta para a avaliação.</div>';
+      return;
+    }
+    th.innerHTML = run.log.map(function (m) {
+      if (m.t === "q") return '<div class="msg me"><span class="lab">Tu</span><div class="b">' + esc(m.text) + '</div></div>';
+      if (m.t === "a") return '<div class="msg pt"><span class="lab">' + esc(c.doente.split(",")[0]) + '</span><div class="b">' + esc(m.text) + '</div></div>';
+      if (m.t === "sys") return '<div class="msg sys"><div class="b">' + esc(m.text) + '</div></div>';
+      if (m.t === "e" || m.t === "x") {
+        return '<div class="finding"><span class="lab">' + (m.t === "e" ? "Exame físico" : "Resultado de exame") + '</span><div class="req">“' + esc(m.req) + '”</div>' +
+          (m.achados.length ? '<dl>' + m.achados.map(function (a) { return '<dt>' + esc(a.nome) + '</dt><dd>' + esc(a.texto) + '</dd>'; }).join("") + '</dl>' : '<div>' + esc(m.text) + '</div>') + '</div>';
+      }
+      return "";
+    }).join("") + (typing ? '<div class="typing">' + (run.mode === "a" ? "O doente está a responder…" : run.mode === "e" ? "A examinar…" : "A aguardar resultados…") + '</div>' : "");
+    th.scrollTop = th.scrollHeight;
+  }
+  async function send() {
+    if (busy) return;
+    var inp = document.getElementById("inp"); var text = inp.value.trim(); if (!text) return;
+    var mode = run.mode;
+    if (mode === "t" && !run.hipLocked) return;
+    busy = true; document.getElementById("send").disabled = true;
+    if (mode === "a") run.log.push({ t: "q", text: text });
+    inp.value = ""; inp.style.height = "auto";
+    renderThread(true);
+    try {
+      var historico = [];
+      for (var i = 0; i < run.log.length - 1; i++) if (run.log[i].t === "q" && run.log[i + 1] && run.log[i + 1].t === "a") historico.push({ q: run.log[i].text, a: run.log[i + 1].text });
+      var r = await api({ acao: "perguntar", caso: run.caso, modo: mode, texto: text, historico: historico.slice(-6) });
+      (r.itens || []).forEach(function (id) { if (run.pedidos.indexOf(id) === -1) run.pedidos.push(id); });
+      if (mode === "a") { run.nPerguntas++; run.log.push({ t: "a", text: r.resposta }); }
+      else run.log.push({ t: mode === "e" ? "e" : "x", req: text, achados: r.achados || [], text: r.resposta || "" });
+    } catch (e) {
+      if (mode === "a") run.log.pop();
+      run.log.push({ t: "sys", text: e.message });
+      inp.value = text;
+    }
+    busy = false; saveRun();
+    var s = document.getElementById("send"); if (s) s.disabled = false;
+    renderRoom();
+  }
+  function lockHip() {
+    var v = (document.getElementById("hip").value || "").trim();
+    var lines = v.split(/\n|;/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var msg = document.getElementById("hipmsg");
+    if (!lines.length) { msg.textContent = "Escreve pelo menos uma hipótese."; return; }
+    if (lines.length > 3) { msg.textContent = "No máximo 3 hipóteses."; return; }
+    run.hip = lines.join("\n"); run.hipLocked = true; run.mode = "t"; saveRun(); renderRoom();
+  }
+  async function finish() {
+    var msg = document.getElementById("finmsg");
+    run.dx = document.getElementById("dx").value.trim(); run.plano = document.getElementById("plano").value.trim();
+    if (!run.dx || !run.plano) { msg.textContent = "Escreve o diagnóstico e o plano."; return; }
+    var b = document.getElementById("finish"); b.disabled = true; b.textContent = "A avaliar…"; msg.textContent = "";
+    try {
+      var rep = await api({ acao: "avaliar", caso: run.caso, pedidos: run.pedidos, hip: run.hip, dx: run.dx, plano: run.plano, nPerguntas: run.nPerguntas });
+      run.report = rep; saveRun();
+      var prev = casosRes[run.caso] || { best: 0, n: 0 };
+      casosRes[run.caso] = { best: Math.max(prev.best || 0, rep.total), last: rep.total, n: (prev.n || 0) + 1, date: today(), miss: rep.escapou.map(function (m) { return m.nome; }) };
+      try { localStorage.setItem(CKEY, JSON.stringify(casosRes)); } catch (e) {}
+      cloudSave();
+      renderReport();
+    } catch (e) { b.disabled = false; b.textContent = "Terminar e avaliar"; msg.textContent = e.message; }
+  }
+
+  // ---------- relatório ----------
+  function renderReport() {
+    var c = caseInfo(run.caso), r = run.report;
+    document.title = "Avaliação · " + c.doente;
+    function dim(l, v) { return '<div class="dim"><span>' + l + '</span><span class="bar"><i style="width:' + Math.round(v * 100) + '%"></i></span><span class="pc">' + Math.round(v * 100) + '%</span></div>'; }
+    var html = '<div class="wrap report"><span class="eyebrow">' + esc(c.doente) + ' · ' + esc(r.titulo) + '</span>' +
+      '<div class="score"><b>' + String(r.total.toFixed(1)).replace(".", ",") + '</b><span>/ 20 · ' + (r.total >= 9.5 ? "Aprovado" : "Abaixo do 9,5") + '</span></div>' +
+      '<div class="report-grid"><div><section class="card"><div class="dims">' + dim("Anamnese", r.dims.anamnese) + dim("Exame físico", r.dims.exame) + dim("Hipóteses", r.dims.hipoteses) + dim("Exames", r.dims.exames) + dim("Diagnóstico", r.dims.diagnostico) + dim("Plano", r.dims.plano) + '</div></section>';
+    html += '<h2>O que te escapou</h2><ul class="fb">' + (r.escapou.length ? r.escapou.map(function (m) {
+      return '<li class="bad"><b><span class="tag">' + esc(m.fase) + '</span>' + esc(m.nome) + (m.peso === 3 ? " · essencial" : "") + '</b><span>' + esc(m.porque) + '</span></li>';
+    }).join("") : '<li class="good"><b>Não te escapou nada importante.</b></li>') + '</ul>';
+    if (r.errados.length || r.semIndicacao.length) {
+      html += '<h2>Exames que não devias ter pedido</h2><ul class="fb">' + r.errados.map(function (w) { return '<li class="bad"><b>' + esc(w.nome) + '</b><span>' + esc(w.porque) + '</span></li>'; }).join("") +
+        (r.semIndicacao.length ? '<li><b>Sem indicação neste caso</b><span>' + esc(r.semIndicacao.join(", ")) + '</span></li>' : '') + '</ul>';
+    }
+    html += '<h2>Raciocínio</h2><ul class="fb">' +
+      '<li class="' + (r.hipoteses.principalIncluida ? "good" : "bad") + '"><b>Hipóteses</b><span>' + (r.hipoteses.principalIncluida ? "Pensaste no diagnóstico certo antes de pedir exames." : "O diagnóstico principal (" + esc(r.hipoteses.principal) + ") não estava nas tuas hipóteses.") + (r.hipoteses.improvaveis.length ? " Pouco prováveis neste contexto: " + esc(r.hipoteses.improvaveis.join(", ")) + "." : "") + '</span></li>' +
+      '<li class="' + (r.diagnostico.correto ? "good" : "bad") + '"><b>Diagnóstico: ' + esc(run.dx) + '</b><span>' + esc(r.diagnostico.nota) + (r.diagnostico.correto ? "" : " Certo: " + esc(r.diagnostico.certo) + ". " + esc(r.diagnostico.porque)) + '</span></li>' +
+      '<li class="' + (r.plano.correto ? "good" : "bad") + '"><b>Plano</b><span>' + esc(r.plano.nota) + (r.plano.correto ? "" : " Plano recomendado: " + esc(r.plano.certo) + ". " + esc(r.plano.porque)) + '</span></li>' +
+      (r.dirigida ? "" : '<li><b>Entrevista pouco dirigida</b><span>Fizeste ' + r.nPerguntas + ' perguntas. Numa consulta real, pergunta primeiro o essencial, guiado pelas hipóteses.</span></li>') + '</ul>';
+    html += '<h2>Para levar deste caso</h2><ul class="fb">' + r.aprender.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join("") + '</ul>';
+    html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px"><button class="btn primary" data-start="' + c.id + '">Repetir o caso</button><button class="btn" id="tolist">Outros casos</button><a class="btn" href="/#' + esc(r.tema) + '">Rever o tema</a></div></div>';
+    // história clínica
+    var anam = [], exf = [], mcdt = [];
+    for (var i = 0; i < run.log.length; i++) {
+      var m = run.log[i];
+      if (m.t === "q" && run.log[i + 1] && run.log[i + 1].t === "a") anam.push('<p><span class="q">' + esc(m.text) + '</span><br>' + esc(run.log[i + 1].text) + '</p>');
+      if (m.t === "e") m.achados.forEach(function (a) { exf.push('<p><b>' + esc(a.nome) + ':</b> ' + esc(a.texto) + '</p>'); });
+      if (m.t === "x") m.achados.forEach(function (a) { mcdt.push('<p><b>' + esc(a.nome) + ':</b> ' + esc(a.texto) + '</p>'); });
+    }
+    var none = '<p class="q">Não avaliado.</p>';
+    html += '<aside class="card hc"><h4>Identificação e queixa principal</h4><p>' + esc(c.doente) + '. ' + esc(c.local) + '. ' + esc(c.queixa) + '</p>' +
+      '<h4>Anamnese</h4>' + (anam.join("") || none) + '<h4>Exame físico</h4>' + (exf.join("") || none) + '<h4>Exames auxiliares de diagnóstico</h4>' + (mcdt.join("") || none) +
+      '<h4>Hipóteses de diagnóstico</h4><p>' + esc(run.hip).replace(/\n/g, "<br>") + '</p><h4>Diagnóstico mais provável</h4><p>' + esc(run.dx) + '</p><h4>Plano</h4><p>' + esc(run.plano) + '</p></aside></div></div>';
+    app.innerHTML = html;
+    window.scrollTo(0, 0);
+  }
+
+  app.addEventListener("click", function (e) {
+    var b;
+    if ((b = e.target.closest("[data-start]"))) { start(b.getAttribute("data-start")); window.scrollTo(0, 0); return; }
+    if ((b = e.target.closest("[data-mode]")) && !b.disabled) { run.mode = b.getAttribute("data-mode"); saveRun(); renderRoom(); return; }
+    if (e.target.closest("#send")) { send(); return; }
+    if (e.target.closest("#lockhip")) { lockHip(); return; }
+    if (e.target.closest("#finish")) { finish(); return; }
+    if (e.target.closest("#leave") || e.target.closest("#tolist")) { run = null; saveRun(); renderList(); window.scrollTo(0, 0); return; }
+  });
+
+  // ---------- conta Google (opcional) ----------
+  var fb = null, user = null;
+  function cloudSave() {
+    if (!fb || !user) return;
+    var ref = fb.firestore().collection("users").doc(user.uid);
+    ref.get().then(function (s) {
+      var rc = (s.exists && s.data().casos) || {}, out = {};
+      Object.keys(casosRes).forEach(function (k) {
+        var a = rc[k], b = casosRes[k];
+        out[k] = !a ? b : { best: Math.max(a.best || 0, b.best || 0), last: b.last, n: Math.max(a.n || 0, b.n || 0), date: b.date, miss: b.miss };
+      });
+      return ref.set({ casos: out, updated: fb.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    }).catch(function () {});
+  }
+  function renderAcct() {
+    var el = document.getElementById("acct");
+    if (!fb) { el.innerHTML = ""; return; }
+    el.innerHTML = user ? ((user.photoURL ? '<img src="' + esc(user.photoURL) + '" alt="" referrerpolicy="no-referrer">' : '') + '<span>' + esc((user.displayName || "").split(" ")[0]) + ' · resultados guardados na conta</span>')
+      : '<span>Sem sessão: os resultados ficam só neste browser.</span>';
+  }
+  function loadScript(src) { return new Promise(function (res, rej) { var s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+  if (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) {
+    var V = "https://www.gstatic.com/firebasejs/10.12.2/";
+    loadScript(V + "firebase-app-compat.js").then(function () { return Promise.all([loadScript(V + "firebase-auth-compat.js"), loadScript(V + "firebase-firestore-compat.js")]); })
+      .then(function () {
+        fb = window.firebase; fb.initializeApp(window.FIREBASE_CONFIG);
+        fb.auth().onAuthStateChanged(function (u) {
+          user = u; renderAcct();
+          if (u) fb.firestore().collection("users").doc(u.uid).get().then(function (s) {
+            var rc = (s.exists && s.data().casos) || {}, changed = false;
+            Object.keys(rc).forEach(function (k) { var a = casosRes[k]; if (!a || (rc[k].best || 0) > (a.best || 0)) { casosRes[k] = Object.assign({}, a || {}, rc[k]); changed = true; } });
+            if (changed) { try { localStorage.setItem(CKEY, JSON.stringify(casosRes)); } catch (e) {} if (!run) renderList(); }
+          }).catch(function () {});
+        });
+      }).catch(function () {});
+  }
+
+  // ---------- arranque ----------
+  app.innerHTML = '<div class="wrap"><p class="hint">A carregar os casos…</p></div>';
+  api().then(function (j) {
+    LIST = j.casos || []; IA = !!j.ia;
+    if (run && run.report) renderReport(); else if (run) renderRoom(); else renderList();
+  }).catch(function (e) {
+    app.innerHTML = '<div class="wrap"><div class="notice">Não foi possível carregar os casos: ' + esc(e.message) + '</div><a class="btn" href="/">Voltar ao estudo</a></div>';
+  });
+})();
+</script>
+</body>
+</html>
