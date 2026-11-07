@@ -1,0 +1,12 @@
+# sistema
+.DS_Store
+
+# Vercel e ambiente local
+.vercel
+.env
+.env*.local
+
+# dependências e ferramentas locais
+node_modules/
+unslop/
+unslop-story/
