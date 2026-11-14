@@ -204,6 +204,7 @@ a { color: var(--accent); }
   var app = document.getElementById("app");
   var LIST = [], IA = true;
   var CKEY = "ipm-casos-v1", RKEY = "ipm-caso-run";
+  var PASS_MARK = 11; // nota mínima para passar (igual à página de estudo)
   var casosRes = {}; try { casosRes = JSON.parse(localStorage.getItem(CKEY) || "{}") || {}; } catch (e) {}
   var run = null; try { run = JSON.parse(sessionStorage.getItem(RKEY) || "null"); } catch (e) { run = null; }
   var busy = false;
@@ -235,7 +236,7 @@ a { color: var(--accent); }
     if (!IA) html += '<div class="notice">O doente virtual ainda não está ligado (falta configurar a IA). Podes ver os casos, mas a conversa só funciona depois disso.</div>';
     html += '<div class="grid">' + LIST.map(function (c) {
       var r = casosRes[c.id];
-      var pill = r ? '<span class="pill ' + (r.best >= 9.5 ? "ok" : "no") + '">Melhor ' + String(r.best.toFixed(1)).replace(".", ",") + '/20</span>' : '<span class="pill">Por fazer</span>';
+      var pill = r ? '<span class="pill ' + (r.best >= PASS_MARK ? "ok" : "no") + '">Melhor ' + String(r.best.toFixed(1)).replace(".", ",") + '/20</span>' : '<span class="pill">Por fazer</span>';
       return '<article class="case"><span class="eyebrow"><span class="dot" style="background:' + (AREA[c.area] || "var(--accent)") + '"></span>' + esc(c.local) + '</span>' +
         '<span class="who">' + esc(c.doente) + '</span><blockquote>' + quote(c.queixa) + '</blockquote>' +
         '<div class="row">' + pill + '<button class="btn" data-start="' + c.id + '">' + (r ? "Repetir consulta" : "Entrar na consulta") + '</button></div></article>';
@@ -369,7 +370,7 @@ a { color: var(--accent); }
     document.title = "Avaliação · " + c.doente;
     function dim(l, v) { return '<div class="dim"><span>' + l + '</span><span class="bar"><i' + (v < 0.5 ? ' class="low"' : '') + ' style="width:' + Math.round(v * 100) + '%"></i></span><span class="pc">' + Math.round(v * 100) + '%</span></div>'; }
     var html = '<div class="wrap report"><span class="eyebrow">' + esc(c.doente) + ' · ' + esc(r.titulo) + '</span>' +
-      '<div class="score"><b>' + String(r.total.toFixed(1)).replace(".", ",") + '</b><span>/ 20 · ' + (r.total >= 9.5 ? "Aprovado" : "Abaixo do 9,5") + '</span></div>' +
+      '<div class="score"><b>' + String(r.total.toFixed(1)).replace(".", ",") + '</b><span>/ 20 · ' + (r.total >= PASS_MARK ? "Aprovado" : "Abaixo do " + String(PASS_MARK).replace(".", ",")) + '</span></div>' +
       '<div class="report-grid"><div><section class="card"><div class="dims">' + dim("Anamnese", r.dims.anamnese) + dim("Exame físico", r.dims.exame) + dim("Hipóteses", r.dims.hipoteses) + dim("Exames", r.dims.exames) + dim("Diagnóstico", r.dims.diagnostico) + dim("Plano", r.dims.plano) + '</div></section>';
     html += '<h2>O que te escapou</h2><ul class="fb">' + (r.escapou.length ? r.escapou.map(function (m) {
       return '<li class="bad"><b><span class="tag">' + esc(m.fase) + '</span>' + esc(m.nome) + (m.peso === 3 ? " · essencial" : "") + '</b><span>' + esc(m.porque) + '</span></li>';

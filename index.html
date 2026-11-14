@@ -2551,7 +2551,8 @@ window.TOPICS.push(
 
   // Estimativa: probabilidade de acertar uma pergunta conforme o estado do cartão.
   var P = { k: 0.9, r: 0.35, u: 0.25 };
-  var EXAM_N = 50, PASS = 9.5 / 20;
+  var EXAM_N = 70, PASS_MARK = 11, PASS = PASS_MARK / 20;
+  function fmtNota(x) { return String(x).replace(".", ","); }
   function expected(c) { return c.n ? (c.k * P.k + c.r * P.r + (c.n - c.k - c.r) * P.u) / c.n : 0; }
   function passProb(p) {
     var need = Math.ceil(PASS * EXAM_N - 1e-9), sum = 0;
@@ -2778,12 +2779,12 @@ window.TOPICS.push(
     var html = '<section class="sheet"><span class="eyebrow">O teu progresso</span><h1>Estatísticas</h1>' +
       '<div class="kpis">' +
       '<div class="kpi hero"><span class="lab">Probabilidade de passar</span><span class="val">' + pct(pp) + '<small>%</small></span><span class="verdict ' + verdict[0] + '">' + verdict[1] + '</span></div>' +
-      '<div class="kpi"><span class="lab">Nota estimada</span><span class="val">' + nota.toFixed(1).replace(".", ",") + '<small> / 20</small></span><span class="sub">Para passar: 9,5</span></div>' +
+      '<div class="kpi"><span class="lab">Nota estimada</span><span class="val">' + nota.toFixed(1).replace(".", ",") + '<small> / 20</small></span><span class="sub">Para passar: ' + fmtNota(PASS_MARK) + '</span></div>' +
       '<div class="kpi"><span class="lab">Cartões sabidos</span><span class="val">' + pct(c.k / c.n) + '<small>%</small></span><span class="sub">' + c.k + ' de ' + c.n + '</span></div>' +
       '<div class="kpi"><span class="lab">Respostas dadas</span><span class="val">' + answered + '</span><span class="sub">' + days + (days === 1 ? ' dia' : ' dias') + ' de estudo</span></div>' +
       '</div>' +
       '<p class="note">' + (need80 > 0 ? 'Para chegares a <b>80% de probabilidade</b> de passar, marca mais <b>' + need80 + ' cartões</b> como sabidos. ' : 'Já estás acima dos 80% de probabilidade. Continua a rever os que falhaste. ') +
-      'A estimativa assume um exame de ' + EXAM_N + ' perguntas sobre esta matéria, com nota mínima de 9,5, e conta ' + pct(P.k) + '% de acerto nos cartões que sabes, ' + pct(P.r) + '% nos que tens a rever e ' + pct(P.u) + '% nos que nunca viste. É uma orientação, não uma previsão do exame real.</p>';
+      'A estimativa assume um exame de ' + EXAM_N + ' perguntas sobre esta matéria, com nota mínima de ' + fmtNota(PASS_MARK) + ', e conta ' + pct(P.k) + '% de acerto nos cartões que sabes, ' + pct(P.r) + '% nos que tens a rever e ' + pct(P.u) + '% nos que nunca viste. É uma orientação, não uma previsão do exame real.</p>';
 
     // por área
     html += '<h3>Por área</h3><div class="legend"><span><i style="background:var(--good)"></i>Sabidos</span><span><i style="background:var(--warn)"></i>A rever</span><span><i style="background:var(--line)"></i>Por ver</span></div>';
