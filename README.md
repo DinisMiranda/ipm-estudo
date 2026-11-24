@@ -24,6 +24,8 @@ Um robô fica no canto de todas as páginas. Clicas nele e perguntas em texto li
 2. Uma pesquisa por palavras (BM25) escolhe as 6 páginas da sebenta que melhor correspondem.
 3. O Gemini responde **só com o texto dessas páginas** e a resposta traz links para as páginas do PDF onde está a informação.
 
+Se o Gemini estiver sobrecarregado, a pergunta passa para o Groq (se houver `GROQ_API_KEY`). Se os dois falharem, o robô mostra o próprio texto das páginas encontradas, sem resumo.
+
 ### Casos clínicos
 Cada caso começa só com a queixa principal. O resto descobres tu, como numa consulta.
 
@@ -124,6 +126,7 @@ Se a sebenta mudar, volta a gerar o índice do assistente com `python3 scripts/b
 | Variável | Obrigatória | Para quê |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | Sim, para os casos | Chave da API do Gemini |
+| `GROQ_API_KEY` | Não | Reserva gratuita do assistente quando o Gemini está sobrecarregado ([console.groq.com](https://console.groq.com)) |
 | `GEMINI_MODEL` | Não | Força um modelo específico em vez da escolha automática |
 
 ## Aviso

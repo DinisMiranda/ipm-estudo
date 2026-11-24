@@ -3,7 +3,8 @@
 // 2) a pesquisa (api/_pesquisa.js) escolhe as páginas da sebenta que melhor correspondem;
 // 3) o Gemini responde APENAS com o texto dessas páginas e diz em que páginas está.
 const { pesquisar } = require("./_pesquisa.js");
-const { geminiJSON } = require("./_gemini.js");
+const { geminiJSON, groqJSON } = require("./_gemini.js");
+const { tokens } = require("./_pesquisa.js");
 // flash-lite primeiro: responde em segundos e chega para resumir excertos; o flash fica de reserva
 const RAPIDO = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite"];
 
@@ -62,16 +63,51 @@ async function responder(pergunta, historico) {
     "Responde só com JSON: {\"resposta\": \"...\", \"paginas\": [n, ...]}"
   ].join("\n");
   const prompt = `EXCERTOS DA SEBENTA:\n${excertos}\n\n${hist ? "CONVERSA ANTERIOR:\n" + hist + "\n\n" : ""}PERGUNTA: ${pergunta}`;
-  const j = await geminiJSON(system, prompt, { maxTokens: 1200, prefer: RAPIDO, timeout: 14000 });
+  // 1.º Gemini, 2.º Groq, 3.º o próprio texto da sebenta (sem IA), para nunca ficar sem resposta
+  let j = null, falha = null;
+  try { j = await geminiJSON(system, prompt, { maxTokens: 1200, prefer: RAPIDO, timeout: 12000, budget: 22000 }); }
+  catch (e) { falha = e; }
+  if (!j && process.env.GROQ_API_KEY) {
+    try { j = await groqJSON(system, prompt, { timeout: 20000 }); }
+    catch (e) { console.error("groq", e.message, e.detail || ""); }
+  }
+  if (!j) {
+    if (falha && falha.detail) console.error("gemini", falha.message, falha.detail);
+    return semIA(pergunta, paginas);
+  }
   const validas = new Set(paginas.flatMap(x => [x.p, x.p + 1]));
   const usadas = [...new Set((Array.isArray(j.paginas) ? j.paginas : []).map(Number).filter(n => validas.has(n)))].sort((a, b) => a - b);
   return { resposta: clip(j.resposta || "Desculpa, não consegui responder. Tenta outra vez.", 4000), paginas: usadas };
 }
 
+// Sem IA: mostra os trechos das páginas encontradas onde a pergunta mais aparece.
+function semIA(pergunta, paginas) {
+  const q = new Set(tokens(pergunta + " " + expandir(pergunta)));
+  const trechos = [];
+  for (const pg of paginas.slice(0, 2)) {
+    const linhas = pg.texto.split("\n").filter(l => l.trim() && !/^\[continua/.test(l));
+    let melhor = 0, idx = 0;
+    linhas.forEach((l, i) => {
+      const janela = linhas.slice(i, i + 8).join(" ");
+      const n = tokens(janela).filter(w => q.has(w)).length;
+      if (n > melhor) { melhor = n; idx = i; }
+    });
+    if (!melhor) continue;
+    const ini = Math.max(0, idx - 1);
+    trechos.push({ p: pg.p, txt: linhas.slice(ini, ini + 14).map(l => l.trim()).join("\n") });
+  }
+  if (!trechos.length) return { resposta: "A IA está indisponível neste momento e não encontrei nada claro sobre isso. Tenta outra vez daqui a pouco.", paginas: [], semIA: true };
+  const corpo = trechos.map(t => `**Página ${t.p}:**\n${t.txt.replace(/^-\s*/gm, "- ")}`).join("\n\n");
+  return {
+    resposta: "A IA está sobrecarregada, por isso aqui fica o texto da sebenta que encontrei (sem resumo):\n\n" + corpo,
+    paginas: trechos.map(t => t.p), semIA: true
+  };
+}
+
 module.exports = async (req, res) => {
   res.setHeader("cache-control", "no-store");
   try {
-    if (req.method === "GET") return res.status(200).json({ ia: !!process.env.GEMINI_API_KEY });
+    if (req.method === "GET") return res.status(200).json({ gemini: !!process.env.GEMINI_API_KEY, groq: !!process.env.GROQ_API_KEY });
     if (req.method !== "POST") return res.status(405).json({ erro: "Método não permitido." });
     const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "local";
     if (limited(ip)) return res.status(429).json({ erro: "Demasiadas perguntas seguidas. Espera um minuto." });

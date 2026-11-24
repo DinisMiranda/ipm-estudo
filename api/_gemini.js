@@ -3,10 +3,11 @@
 const LITE = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash"];
 const FLASH = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
 
-async function geminiJSON(system, prompt, { maxTokens = 900, prefer = FLASH, temperature = 0.2, timeout = 20000 } = {}) {
+async function geminiJSON(system, prompt, opts = {}) {
+  const { maxTokens = 900, prefer = FLASH, temperature = 0.2, timeout = 20000 } = opts;
   const key = process.env.GEMINI_API_KEY;
   if (!key) { const e = new Error("A IA ainda não está configurada (falta a chave do Gemini no Vercel)."); e.status = 503; throw e; }
-  const fim = Date.now() + 40000;
+  const fim = Date.now() + (opts.budget || 40000);
   const call = m => {
     const restante = Math.max(3000, Math.min(timeout, fim - Date.now()));
     const generationConfig = { responseMimeType: "application/json", temperature, maxOutputTokens: Math.max(maxTokens, 2048) };
@@ -41,4 +42,25 @@ async function geminiJSON(system, prompt, { maxTokens = 900, prefer = FLASH, tem
   catch { const e = new Error("A IA devolveu uma resposta inválida. Tenta outra vez."); e.status = 502; e.detail = txt.slice(0, 300); throw e; }
 }
 
-module.exports = { geminiJSON, LITE, FLASH };
+// Groq (gratuito, compatível com a API da OpenAI): reserva quando o Gemini está sobrecarregado.
+async function groqJSON(system, prompt, { maxTokens = 1200, timeout = 20000 } = {}) {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) { const e = new Error("Sem chave do Groq."); e.status = 503; throw e; }
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: "Bearer " + key },
+    body: JSON.stringify({
+      model: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
+      messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
+      response_format: { type: "json_object" }, temperature: 0.2, max_completion_tokens: maxTokens
+    }),
+    signal: AbortSignal.timeout(timeout)
+  }).catch(err => ({ ok: false, status: 504, text: async () => String(err) }));
+  if (!r.ok) { const e = new Error("O Groq não respondeu (" + r.status + ")."); e.status = r.status === 429 ? 429 : 502; e.detail = (await r.text()).slice(0, 300); throw e; }
+  const j = await r.json();
+  const txt = (j.choices?.[0]?.message?.content || "").trim();
+  try { return JSON.parse(txt.replace(/^```(?:json)?\s*|\s*```$/g, "")); }
+  catch { const e = new Error("O Groq devolveu uma resposta inválida."); e.status = 502; e.detail = txt.slice(0, 300); throw e; }
+}
+
+module.exports = { geminiJSON, groqJSON, LITE, FLASH };
