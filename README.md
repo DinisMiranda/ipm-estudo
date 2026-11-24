@@ -17,6 +17,13 @@ Estudar a partir de um PDF de 431 páginas é lento. Este site parte-o em pedaç
 - Pesquisa por tema ou termo, por exemplo `TCD4`.
 - O PDF original, um resumo para imprimir e o modelo de história clínica estão a um clique.
 
+### Assistente da sebenta
+Um robô fica no canto de todas as páginas. Clicas nele e perguntas em texto livre, por exemplo "quando meter VNI?" ou "critérios para internar uma pneumonia", em vez de procurar nas 431 páginas.
+
+1. O Gemini transforma a pergunta em termos de pesquisa e expande as siglas (VNI → ventilação não invasiva).
+2. Uma pesquisa por palavras (BM25) escolhe as 6 páginas da sebenta que melhor correspondem.
+3. O Gemini responde **só com o texto dessas páginas** e a resposta traz links para as páginas do PDF onde está a informação.
+
 ### Casos clínicos
 Cada caso começa só com a queixa principal. O resto descobres tu, como numa consulta.
 
@@ -84,9 +91,16 @@ flowchart LR
 .
 ├── index.html            resumo, flashcards e estatísticas
 ├── casos/index.html      simulador de casos clínicos
+├── chat.js               robô e caixa de chat do assistente da sebenta
 ├── api/
 │   ├── caso.js           função Vercel: doente simulado e avaliação
-│   └── _casos.js         fichas dos 10 casos e banco comum de perguntas
+│   ├── _casos.js         fichas dos 10 casos e banco comum de perguntas
+│   ├── perguntar.js      função Vercel: assistente da sebenta
+│   ├── _pesquisa.js      pesquisa BM25 nas páginas da sebenta
+│   ├── _sebenta.json     texto da sebenta por página (gerado)
+│   └── _gemini.js        chamada ao Gemini usada pelo assistente
+├── scripts/
+│   └── build-sebenta.py  gera api/_sebenta.json a partir do PDF
 ├── firebase-config.js    configuração pública do Firebase
 ├── firestore.rules       regras de acesso ao Firestore
 └── docs/                 imagens deste README
@@ -103,7 +117,9 @@ echo "GEMINI_API_KEY=a-tua-chave" > .env.local
 vercel dev
 ```
 
-A página de estudo funciona sem chave. Os casos clínicos precisam de `GEMINI_API_KEY`, e uma chave gratuita do [Google AI Studio](https://aistudio.google.com/apikey) chega.
+A página de estudo funciona sem chave. Os casos clínicos e o assistente precisam de `GEMINI_API_KEY`, e uma chave gratuita do [Google AI Studio](https://aistudio.google.com/apikey) chega.
+
+Se a sebenta mudar, volta a gerar o índice do assistente com `python3 scripts/build-sebenta.py` (precisa do `pdftotext`, do pacote poppler).
 
 | Variável | Obrigatória | Para quê |
 | --- | --- | --- |
