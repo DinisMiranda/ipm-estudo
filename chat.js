@@ -87,6 +87,7 @@
 .ic-sug{display:flex;flex-wrap:wrap;gap:6px}
 .ic-sug button{border:1px solid var(--line,#dde3e0);background:var(--paper,#fff);color:var(--ink,#16201d);border-radius:999px;padding:6px 11px;font:inherit;font-size:13px;cursor:pointer}
 .ic-sug button:hover{background:var(--accent-soft,#e2f0ee);border-color:var(--accent,#0e6a63)}
+.ic-procura{font-size:13px;color:var(--muted,#5b6a65);margin-left:4px}
 .ic-dots{display:inline-flex;gap:4px;padding:4px 0}
 .ic-dots i{width:7px;height:7px;border-radius:50%;background:var(--muted,#5b6a65);animation:ic-dot 1.2s infinite}
 .ic-dots i:nth-child(2){animation-delay:.15s}.ic-dots i:nth-child(3){animation-delay:.3s}
@@ -212,22 +213,27 @@
     aCarregar = true; enviar.disabled = true;
     if (!hist.length) log.innerHTML = "";
     bolha("ic-eu", "<p>" + esc(q) + "</p>");
-    const espera = bolha("ic-ele", '<span class="ic-dots" aria-label="A procurar"><i></i><i></i><i></i></span>');
+    const espera = bolha("ic-ele", '<span class="ic-dots" aria-hidden="true"><i></i><i></i><i></i></span> <span class="ic-procura">A procurar na sebenta…</span>');
     ta.value = ""; ajustar();
     try {
+      const ctl = new AbortController();
+      const limite = setTimeout(() => ctl.abort(), 60000);
       const r = await fetch(API, {
         method: "POST",
+        signal: ctl.signal,
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ pergunta: q, historico: hist.slice(-4).map(h => ({ q: h.q, a: h.a })) })
       });
       const j = await r.json().catch(() => ({}));
+      clearTimeout(limite);
       if (!r.ok) throw new Error(j.erro || "Não consegui responder (" + r.status + ").");
       espera.innerHTML = md(j.resposta) + pags(j.paginas);
       hist.push({ q, a: j.resposta, p: j.paginas || [] });
       guardar();
     } catch (e) {
       espera.className = "ic-msg ic-erro";
-      espera.textContent = e.message === "Failed to fetch" ? "Sem ligação. Verifica a internet e tenta outra vez." : e.message;
+      espera.textContent = e.name === "AbortError" ? "Está a demorar demasiado. Tenta outra vez daqui a pouco."
+        : e.message === "Failed to fetch" ? "Sem ligação. Verifica a internet e tenta outra vez." : e.message;
     } finally {
       aCarregar = false; enviar.disabled = !ta.value.trim();
       log.scrollTop = log.scrollHeight;

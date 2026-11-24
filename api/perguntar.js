@@ -1,9 +1,11 @@
 // Função Vercel: assistente da sebenta.
-// 1) o Gemini transforma a pergunta em termos de pesquisa (expande siglas como VNI, PAC, TEP);
+// 1) as siglas da pergunta são expandidas (VNI → ventilação não invasiva);
 // 2) a pesquisa (api/_pesquisa.js) escolhe as páginas da sebenta que melhor correspondem;
 // 3) o Gemini responde APENAS com o texto dessas páginas e diz em que páginas está.
 const { pesquisar } = require("./_pesquisa.js");
-const { geminiJSON, LITE, FLASH } = require("./_gemini.js");
+const { geminiJSON } = require("./_gemini.js");
+// flash-lite primeiro: responde em segundos e chega para resumir excertos; o flash fica de reserva
+const RAPIDO = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash"];
 
 const hits = new Map();
 function limited(ip) {
@@ -14,30 +16,37 @@ function limited(ip) {
 }
 const clip = (s, n) => String(s || "").slice(0, n);
 
-async function termosDePesquisa(pergunta, hist) {
-  const system = [
-    "Ajudas a pesquisar numa sebenta de Introdução à Prática Médica escrita em português de Portugal (infecciologia, pneumologia, saúde pública, cardiovascular, semiologia).",
-    "Recebes a pergunta de um estudante (e, se houver, a conversa anterior, para perceberes perguntas de seguimento como \"e na DPOC?\").",
-    "Devolve termos de pesquisa como a sebenta os escreveria: o tema principal, siglas por extenso e também a sigla (ex.: VNI e ventilação não invasiva; PAC e pneumonia adquirida na comunidade), sinónimos e palavras que costumam aparecer na resposta (ex.: internar → internamento, hospitalizar, critérios de gravidade, CURB-65).",
-    "Responde só com JSON: {\"tema\": \"pergunta reescrita de forma autónoma\", \"termos\": [\"...\", ...]} com 3 a 10 termos."
-  ].join("\n");
-  const prompt = (hist ? "CONVERSA ANTERIOR:\n" + hist + "\n\n" : "") + "PERGUNTA: " + pergunta;
-  try {
-    const j = await geminiJSON(system, prompt, { maxTokens: 300, prefer: LITE, timeout: 12000 });
-    return { tema: clip(j.tema, 300) || pergunta, termos: (Array.isArray(j.termos) ? j.termos : []).slice(0, 12).map(t => clip(t, 80)) };
-  } catch (e) {
-    if (e.status === 429 || e.status === 503) throw e;
-    return { tema: pergunta, termos: [] }; // sem expansão, pesquisa só com a pergunta
+// Siglas frequentes na sebenta: a pesquisa procura a sigla e também o nome por extenso.
+// (Antes havia uma chamada extra ao Gemini para isto; com o dicionário a resposta é mais rápida.)
+const SIGLAS = {
+  vni: "ventilação não invasiva", vmi: "ventilação mecânica invasiva", vm: "ventilação mecânica",
+  pac: "pneumonia adquirida na comunidade", pn: "pneumonia", tep: "tromboembolismo pulmonar embolia",
+  tvp: "trombose venosa profunda", dpoc: "doença pulmonar obstrutiva crónica", ir: "insuficiência respiratória",
+  ira: "insuficiência respiratória aguda", ic: "insuficiência cardíaca", eap: "edema agudo do pulmão",
+  ards: "síndrome de dificuldade respiratória aguda", sdra: "síndrome de dificuldade respiratória aguda",
+  vih: "VIH HIV SIDA", hiv: "VIH HIV SIDA", sida: "VIH HIV SIDA", tb: "tuberculose", pcp: "pneumocistose Pneumocystis",
+  eam: "enfarte agudo do miocárdio", sca: "síndrome coronária aguda", hta: "hipertensão arterial", avc: "acidente vascular cerebral",
+  itu: "infeção do trato urinário", fa: "fibrilhação auricular", uci: "unidade de cuidados intensivos", dpi: "doença pulmonar intersticial",
+  pfr: "provas funcionais respiratórias", sirs: "síndrome de resposta inflamatória sistémica sépsis", o2: "oxigenoterapia oxigénio"
+};
+function expandir(texto) {
+  const extra = [];
+  for (const w of String(texto).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").match(/[a-z0-9]+/g) || []) {
+    if (SIGLAS[w]) extra.push(SIGLAS[w]);
   }
+  if (/\b(internar|hospitali|internamento)/i.test(texto)) extra.push("internamento hospitalização critérios de gravidade decisão");
+  if (/\b(meter|p[oô]r|usar|indica)/i.test(texto)) extra.push("indicações");
+  return extra.join(" ");
 }
 
 async function responder(pergunta, historico) {
   const hist = (historico || []).slice(-4).map(h => `Estudante: ${clip(h.q, 300)}\nAssistente: ${clip(h.a, 600)}`).join("\n");
-  const { tema, termos } = await termosDePesquisa(pergunta, hist);
+  const anterior = (historico || []).slice(-1)[0];
   const paginas = pesquisar([
     { texto: pergunta, peso: 1 },
-    { texto: tema, peso: 1 },
-    ...termos.map(t => ({ texto: t, peso: 0.8 }))
+    { texto: expandir(pergunta), peso: 0.9 },
+    // perguntas de seguimento ("e na asma?"): a pergunta anterior também conta, com menos peso
+    ...(anterior ? [{ texto: clip(anterior.q, 300) + " " + expandir(anterior.q), peso: 0.4 }] : [])
   ], 6);
   if (!paginas.length) {
     return { resposta: "Não encontrei nada sobre isso na sebenta. Experimenta escrever de outra forma, por exemplo com o nome da doença.", paginas: [] };
@@ -53,7 +62,7 @@ async function responder(pergunta, historico) {
     "Responde só com JSON: {\"resposta\": \"...\", \"paginas\": [n, ...]}"
   ].join("\n");
   const prompt = `EXCERTOS DA SEBENTA:\n${excertos}\n\n${hist ? "CONVERSA ANTERIOR:\n" + hist + "\n\n" : ""}PERGUNTA: ${pergunta}`;
-  const j = await geminiJSON(system, prompt, { maxTokens: 1200, prefer: FLASH, timeout: 25000 });
+  const j = await geminiJSON(system, prompt, { maxTokens: 1200, prefer: RAPIDO, timeout: 14000 });
   const validas = new Set(paginas.flatMap(x => [x.p, x.p + 1]));
   const usadas = [...new Set((Array.isArray(j.paginas) ? j.paginas : []).map(Number).filter(n => validas.has(n)))].sort((a, b) => a - b);
   return { resposta: clip(j.resposta || "Desculpa, não consegui responder. Tenta outra vez.", 4000), paginas: usadas };
