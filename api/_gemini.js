@@ -21,10 +21,12 @@ async function geminiJSON(system, prompt, { maxTokens = 900, prefer = FLASH, tem
   const order = [...new Set([process.env.GEMINI_MODEL, ...prefer].filter(Boolean))];
   // tenta os modelos por ordem, mas nunca passa dos ~40 s no total (o Vercel corta a função)
   let r;
-  for (const m of order.slice(0, 3)) {
-    r = await call(m);
+  // os modelos gratuitos dão 503 ("high demand") aos picos: volta a tentar, alternando, até 5 vezes
+  for (let i = 0; i < 5; i++) {
+    r = await call(order[i % order.length]);
     if (r.ok || r.status === 400 || r.status === 403) break;
     if (Date.now() + 5000 > fim) break;
+    await new Promise(ok => setTimeout(ok, 600 + 400 * i));
   }
   if (!r.ok) {
     const body = (await r.text()).slice(0, 400);

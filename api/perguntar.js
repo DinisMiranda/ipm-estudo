@@ -5,7 +5,7 @@
 const { pesquisar } = require("./_pesquisa.js");
 const { geminiJSON } = require("./_gemini.js");
 // flash-lite primeiro: responde em segundos e chega para resumir excertos; o flash fica de reserva
-const RAPIDO = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash"];
+const RAPIDO = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite"];
 
 const hits = new Map();
 function limited(ip) {
