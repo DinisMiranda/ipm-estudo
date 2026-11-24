@@ -40,7 +40,7 @@ function expandir(texto) {
   return extra.join(" ");
 }
 
-async function responder(pergunta, historico) {
+async function responder(pergunta, historico, { soGroq = false } = {}) {
   const hist = (historico || []).slice(-4).map(h => `Estudante: ${clip(h.q, 300)}\nAssistente: ${clip(h.a, 600)}`).join("\n");
   const anterior = (historico || []).slice(-1)[0];
   const paginas = pesquisar([
@@ -65,7 +65,7 @@ async function responder(pergunta, historico) {
   const prompt = `EXCERTOS DA SEBENTA:\n${excertos}\n\n${hist ? "CONVERSA ANTERIOR:\n" + hist + "\n\n" : ""}PERGUNTA: ${pergunta}`;
   // 1.º Gemini, 2.º Groq, 3.º o próprio texto da sebenta (sem IA), para nunca ficar sem resposta
   let j = null, falha = null;
-  try { j = await geminiJSON(system, prompt, { maxTokens: 1200, prefer: RAPIDO, timeout: 12000, budget: 22000 }); }
+  if (!soGroq) try { j = await geminiJSON(system, prompt, { maxTokens: 1200, prefer: RAPIDO, timeout: 12000, budget: 22000 }); }
   catch (e) { falha = e; }
   if (!j && process.env.GROQ_API_KEY) {
     try { j = await groqJSON(system, prompt, { timeout: 20000 }); }
@@ -107,7 +107,15 @@ function semIA(pergunta, paginas) {
 module.exports = async (req, res) => {
   res.setHeader("cache-control", "no-store");
   try {
-    if (req.method === "GET") return res.status(200).json({ gemini: !!process.env.GEMINI_API_KEY, groq: !!process.env.GROQ_API_KEY });
+    if (req.method === "GET") {
+      // diagnóstico: ?diag=groq responde a uma pergunta de teste só com o Groq (para confirmar a chave)
+      if (req.query && req.query.diag === "groq") {
+        const t0 = Date.now();
+        const out = await responder("quando meter VNI?", [], { soGroq: true });
+        return res.status(200).json({ ms: Date.now() - t0, groqOk: !out.semIA, inicio: out.resposta.slice(0, 200) });
+      }
+      return res.status(200).json({ gemini: !!process.env.GEMINI_API_KEY, groq: !!process.env.GROQ_API_KEY });
+    }
     if (req.method !== "POST") return res.status(405).json({ erro: "Método não permitido." });
     const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "local";
     if (limited(ip)) return res.status(429).json({ erro: "Demasiadas perguntas seguidas. Espera um minuto." });
